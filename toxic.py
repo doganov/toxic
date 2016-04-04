@@ -2,8 +2,6 @@
 
 import pydot_ng as pydot
 
-THRESHOLD=0.09 # FIXME
-
 def unquote(quoted):
     if quoted.startswith('"') and quoted.endswith('"'):
         return quoted[1:-1]
@@ -58,15 +56,15 @@ def gc(graph, gc_roots):
 def find_nodes(graph, labels):
     return [node for node in graph.get_nodes() if node.get_label() in labels]
 
-def prune_edges(graph):
+def prune_edges(graph, threshold):
     for e in graph.get_edges():
         weight = float(unquote(e.get_label()))
-        if weight < THRESHOLD: # FIXME
+        if weight < threshold:
             graph.del_edge(points(e))
 
-def prune(graph):
-    prune_edges(graph)
-    gc(graph, find_nodes(graph, ['"C6H6"', '"C7H8"', '"C10H12"']))
+def prune(graph, threshold, gc_root_labels):
+    prune_edges(graph, threshold)
+    gc(graph, find_nodes(graph, gc_root_labels))
 
 def transform(dot_data, f):
     graph = pydot.graph_from_dot_data(dot_data)
@@ -78,4 +76,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         print("toxic.py transforms .dot data from stdin to stdout")
 
-    print(transform(sys.stdin.read(), prune))
+    threshold = 0.09 # FIXME
+    gc_root_labels = ['"C6H6"', '"C7H8"', '"C10H12"'] # FIXME
+    f = lambda g: prune(g, threshold, gc_root_labels)
+
+    print(transform(sys.stdin.read(), f))

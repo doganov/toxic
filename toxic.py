@@ -54,7 +54,7 @@ def gc(graph, gc_roots):
             graph.del_edge(points(edge))
 
 def find_nodes(graph, labels):
-    return [node for node in graph.get_nodes() if node.get_label() in labels]
+    return [n for n in graph.get_nodes() if unquote(n.get_label()) in labels]
 
 def prune_edges(graph, threshold):
     for e in graph.get_edges():
@@ -77,7 +77,7 @@ if __name__ == "__main__":
         print("toxic.py transforms .dot data from stdin to stdout")
 
     threshold = 0.09 # FIXME
-    gc_root_labels = ['"C6H6"', '"C7H8"', '"C10H12"'] # FIXME
+    gc_root_labels = ["C6H6", "C7H8", "C10H12"] # FIXME
     f = lambda g: prune(g, threshold, gc_root_labels)
 
     print(transform(sys.stdin.read(), f))

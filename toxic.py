@@ -31,7 +31,7 @@ def walk(graph, start_node, f):
         for node in graph.get_node(node_name):
             f(node)
         visited.add(node_name)
-        pending = pending | neighbours.get(node_name)
+        pending = pending | neighbours.get(node_name, set())
         pending = pending - visited
 
 def gc(graph, gc_roots):

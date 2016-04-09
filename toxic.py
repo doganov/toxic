@@ -73,11 +73,27 @@ def transform(dot_data, f):
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) > 1:
-        print("toxic.py transforms .dot data from stdin to stdout")
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Small .dot file transformation utility")
+    parser.add_argument(
+        "-t",
+        "--threshold",
+        type=float,
+        required=True,
+        help="edge weight threshold value")
+    parser.add_argument(
+        "-r",
+        "--gc-root",
+        action="append",
+        required=True,
+        help="label of the node to be used as a root during the " + \
+        "garbage collection (GC) phase. May be used multiple times " + \
+        "to specify multiple GC roots.")
+    args = parser.parse_args()
 
-    threshold = 0.09 # FIXME
-    gc_root_labels = ["C6H6", "C7H8", "C10H12"] # FIXME
-    f = lambda g: prune(g, threshold, gc_root_labels)
+    print("DEBUG:", args, file=sys.stderr) # FIXME
+
+    f = lambda g: prune(g, args.threshold, args.gc_root)
 
     print(transform(sys.stdin.read(), f))

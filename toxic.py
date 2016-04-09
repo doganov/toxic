@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+import os
+import os.path
+import sys
+
 import pydot_ng as pydot
 
 def unquote(quoted):
@@ -71,11 +75,41 @@ def transform(dot_data, f):
     f(graph)
     return graph.to_string()
 
+def transform_file(input_filename, output_filename, f, verbose=False):
+    if verbose:
+        print("Transforming {} -> {}...".format(input_filename, output_filename),
+              file=sys.stderr)
+
+    with open(input_filename, "r") as input_file:
+        dot_data = input_file.read()
+
+    dot_data = transform(dot_data, f)
+
+    with open(output_filename, "w") as output_file:
+        output_file.write(dot_data)
+
+def transform_dir(input_dirname, output_dirname, f, verbose=False):
+    input_basenames = [i
+                       for i in os.listdir(input_dirname)
+                       if (i.endswith(".dot") or i.endswith(".DOT"))]
+    for basename in input_basenames:
+        input_filename = os.path.join(input_dirname, basename)
+        output_filename = os.path.join(output_dirname, basename)
+        transform_file(input_filename, output_filename, f, verbose=verbose)
+
 if __name__ == "__main__":
-    import sys
     import argparse
     parser = argparse.ArgumentParser(
+        usage="[-h] -t THRESHOLD -r GC_ROOT [INPUT OUTPUT]",
         description="Small .dot file transformation utility")
+    parser.add_argument(
+        "INPUT",
+        nargs="?",
+        help="input filename or directory")
+    parser.add_argument(
+        "OUTPUT",
+        nargs="?",
+        help="output filename or directory")
     parser.add_argument(
         "-t",
         "--threshold",
@@ -92,8 +126,26 @@ if __name__ == "__main__":
         "to specify multiple GC roots.")
     args = parser.parse_args()
 
-    print("DEBUG:", args, file=sys.stderr) # FIXME
-
     f = lambda g: prune(g, args.threshold, args.gc_root)
 
-    print(transform(sys.stdin.read(), f))
+    def die(msg):
+        print("{}: {}".format(parser.prog, msg), file=sys.stderr)
+        sys.exit(-1)
+
+    if (not args.INPUT) and (not args.OUTPUT):
+        # pipe mode
+        print(transform(sys.stdin.read(), f))
+    elif args.INPUT and args.OUTPUT:
+        if not os.path.exists(args.INPUT):
+            die("{} does not exist".format(args.INPUT))
+        if os.path.isfile(args.INPUT):
+            # file mode
+            transform_file(args.INPUT, args.OUTPUT, f)
+        elif os.path.isdir(args.INPUT):
+            if os.path.isdir(args.OUTPUT):
+                # dir mode
+                transform_dir(args.INPUT, args.OUTPUT, f, verbose=True)
+            else:
+                die("{} is not an exising directory".format(args.OUTPUT))
+    else:
+        parser.print_usage(file=sys.stderr)
